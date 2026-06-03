@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CNN Explainer — Visual Interactive Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#f8f7f4;--surface:#ffffff;--surface2:#f1efe8;--border:#e2dfd6;
+  --accent:#534AB7;--accent-light:#EEEDFE;--accent-mid:#AFA9EC;
+  --teal:#0F6E56;--teal-light:#E1F5EE;--teal-mid:#5DCAA5;
+  --amber:#854F0B;--amber-light:#FAEEDA;--amber-mid:#EF9F27;
+  --coral:#993C1D;--coral-light:#FAECE7;--coral-mid:#F0997B;
+  --green:#3B6D11;--green-light:#EAF3DE;--green-mid:#97C459;
+  --text:#1a1917;--text2:#5f5e5a;--text3:#888780;
+  --radius:10px;--mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6}
+
+/* ── HEADER ── */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:18px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;letter-spacing:-.02em}
+.logo span{color:var(--accent)}
+.nav-tabs{display:flex;gap:4px}
+.nav-tab{padding:7px 16px;border-radius:7px;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .2s}
+.nav-tab:hover{background:var(--surface2);color:var(--text)}
+.nav-tab.active{background:var(--accent-light);color:var(--accent)}
+.progress-bar{position:fixed;top:0;left:0;height:3px;background:var(--accent);transition:width .1s;z-index:200}
+
+/* ── SECTIONS ── */
+.section{display:none;padding:32px;max-width:980px;margin:0 auto}
+.section.active{display:block}
+.section-header{margin-bottom:28px}
+.section-header h2{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+.section-header p{color:var(--text2);font-size:15px;max-width:580px}
+
+/* ── PIPELINE ── */
+.pipeline-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;overflow-x:auto}
+.pipeline{display:flex;align-items:center;gap:6px;min-width:max-content}
+.lp{flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:2px solid transparent;transition:all .2s;white-space:nowrap}
+.lp:hover{transform:translateY(-2px)}
+.lp.lp-input{background:var(--surface2);color:var(--text2)}
+.lp.lp-input.active{background:#E6F1FB;color:#0C447C;border-color:#185FA5}
+.lp.lp-conv{background:var(--accent-light);color:var(--accent)}
+.lp.lp-conv.active{border-color:var(--accent)}
+.lp.lp-relu{background:var(--teal-light);color:var(--teal)}
+.lp.lp-relu.active{border-color:var(--teal)}
+.lp.lp-pool{background:var(--amber-light);color:var(--amber)}
+.lp.lp-pool.active{border-color:var(--amber)}
+.lp.lp-flat{background:var(--coral-light);color:var(--coral)}
+.lp.lp-flat.active{border-color:var(--coral)}
+.lp.lp-fc{background:#E6F1FB;color:#0C447C}
+.lp.lp-fc.active{border-color:#185FA5}
+.lp.lp-out{background:var(--green-light);color:var(--green)}
+.lp.lp-out.active{border-color:var(--green)}
+.arr-sep{color:var(--text3);font-size:16px}
+
+/* ── MAIN GRID ── */
+.main-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:680px){.main-grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.card-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:14px}
+.viz-box{min-height:200px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px}
+
+/* ── INFO CARD ── */
+.info-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:16px}
+.info-card h3{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:8px}
+.info-card .desc{color:var(--text2);line-height:1.7;margin-bottom:14px}
+.math-block{font-family:var(--mono);font-size:13px;background:var(--surface2);border-radius:8px;padding:12px 16px;color:var(--text2);margin-bottom:14px;border-left:3px solid var(--accent)}
+.stats-row{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:var(--surface2);border-radius:8px;padding:10px 16px;text-align:center;flex:1;min-width:80px}
+.stat-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent)}
+.stat-lbl{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* ── IMG BUTTONS ── */
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.btn-row label{font-size:13px;color:var(--text3)}
+.img-btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}
+.img-btn:hover{border-color:var(--accent-mid);color:var(--accent)}
+.img-btn.active{background:var(--accent-light);color:var(--accent);border-color:var(--accent)}
+
+/* ── PIXEL GRID ── */
+.pixel-grid{display:grid;gap:2px}
+.px-cell{border-radius:3px;transition:background .3s}
+.fm-wrap{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.fm{display:grid;gap:1px;border-radius:4px;overflow:hidden;transition:transform .2s;cursor:pointer}
+.fm:hover{transform:scale(1.12)}
+.fm-cell{transition:background .3s}
+.out-bars{width:100%}
+.out-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:13px}
+.out-lbl{color:var(--text2);min-width:18px;text-align:right;font-family:var(--mono);font-size:12px}
+.bar-wrap{flex:1;height:14px;background:var(--surface2);border-radius:7px;overflow:hidden}
+.bar-fill{height:100%;border-radius:7px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.bar-pct{color:var(--text3);font-size:11px;min-width:32px;font-family:var(--mono)}
+.top-pred{background:var(--green-light);border:1px solid var(--green-mid);border-radius:8px;padding:10px 16px;text-align:center;margin-bottom:12px;font-size:14px;color:var(--green)}
+.top-pred strong{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;display:block}
+
+/* ── DRAW SECTION ── */
+#draw-canvas{border:2px solid var(--border);border-radius:8px;cursor:crosshair;display:block;touch-action:none;background:#fff}
+#draw-canvas:hover{border-color:var(--accent)}
+.draw-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.draw-grid{grid-template-columns:1fr}}
+.draw-controls{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.ctrl-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}
+.ctrl-btn:hover{border-color:var(--accent);color:var(--accent)}
+.ctrl-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ctrl-btn.primary:hover{background:#3C3489}
+.drawn-output{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.draw-result-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;margin-bottom:12px;color:var(--text)}
+.confidence-bars{margin-top:12px}
+.big-pred{font-family:'Syne',sans-serif;font-size:48px;font-weight:800;color:var(--accent);text-align:center;padding:20px 0}
+.pred-label{font-size:13px;color:var(--text3);text-align:center;margin-top:-12px;margin-bottom:12px}
+
+/* ── KERNEL SECTION ── */
+.kernel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:20px}
+.kernel-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .2s}
+.kernel-card:hover{border-color:var(--accent-mid);transform:translateY(-2px)}
+.kernel-card.selected{border-color:var(--accent);background:var(--accent-light)}
+.kernel-card h4{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px}
+.kernel-card p{font-size:12px;color:var(--text3);margin-bottom:12px}
+.k3{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.k-cell{aspect-ratio:1;border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:600}
+.kernel-demo{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.kd-label{font-size:12px;color:var(--text3);text-align:center;margin-bottom:6px}
+.kd-op{font-size:22px;color:var(--text3);text-align:center}
+
+/* ── TRAINING SECTION ── */
+.training-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.training-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+@media(max-width:560px){.training-stats{grid-template-columns:repeat(2,1fr)}}
+.train-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center}
+.train-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800}
+.train-lbl{font-size:11px;color:var(--text3);margin-top:2px}
+.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+#loss-canvas{width:100%;display:block}
+.epoch-log{background:var(--surface2);border-radius:8px;padding:14px;font-family:var(--mono);font-size:12px;color:var(--text2);max-height:180px;overflow-y:auto;line-height:2}
+.log-line{display:flex;gap:12px}
+.log-epoch{color:var(--accent)}
+.log-loss{color:var(--coral)}
+.log-acc{color:var(--teal)}
+
+/* ── SLIDER ── */
+input[type=range]{width:100%;accent-color:var(--accent)}
+
+/* ── TOOLTIP ── */
+.tooltip{position:absolute;background:var(--text);color:#fff;font-size:12px;padding:5px 10px;border-radius:6px;pointer-events:none;white-space:nowrap;z-index:50;font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<header>
+  <div class="logo">CNN<span>.</span>explainer</div>
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="showSection('explore',this)">Explore</button>
+    <button class="nav-tab" onclick="showSection('draw',this)">Draw a Digit</button>
+    <button class="nav-tab" onclick="showSection('kernels',this)">Kernels</button>
+    <button class="nav-tab" onclick="showSection('training',this)">Training</button>
+  </nav>
+</header>
+
+<!-- ════════════════ EXPLORE ════════════════ -->
+<section class="section active" id="sec-explore">
+  <div class="section-header">
+    <h2>How a CNN processes an image</h2>
+    <p>Click each layer to see what it does to the data. Switch input images to compare.</p>
+  </div>
+
+  <div class="btn-row">
+    <label>Input image:</label>
+    <button class="img-btn active" onclick="setImg('digit7',this)">Digit "7"</button>
+    <button class="img-btn" onclick="setImg('digit0',this)">Digit "0"</button>
+    <button class="img-btn" onclick="setImg('edge',this)">Edge</button>
+    <button class="img-btn" onclick="setImg('cross',this)">Cross</button>
+    <button class="img-btn" onclick="setImg('circle',this)">Circle</button>
+  </div>
+
+  <div class="pipeline-wrap">
+    <div class="pipeline" id="pipeline">
+      <div class="lp lp-input active" onclick="selLayer(0)">Input 8×8</div>
+      <span class="arr-sep">→</span>
+      <div class="lp lp-conv" onclick="selLayer(1)">Conv2D</div>
+      <span class="arr-sep">→</span>
+      <div class="lp lp-relu" onclick="selLayer(2)">ReLU</div>
+      <span class="arr-sep">→</span>
+      <div class="lp lp-pool" onclick="selLayer(3)">MaxPool</div>
+      <span class="arr-sep">→</span>
+      <div class="lp lp-conv" onclick="selLayer(4)">Conv2D #2</div>
+      <span class="arr-sep">→</span>
+      <div class="lp lp-flat" onclick="selLayer(5)">Flatten</div>
+      <span class="arr-sep">→</span>
+      <div class="lp lp-fc" onclick="selLayer(6)">Dense</div>
+      <span class="arr-sep">→</span>
+      <div class="lp lp-out" onclick="selLayer(7)">Softmax</div>
+    </div>
+  </div>
+
+  <div class="info-card" id="info-card"></div>
+
+  <div class="main-grid">
+    <div class="card">
+      <div class="card-label" id="left-label">Before</div>
+      <div class="viz-box" id="viz-left"></div>
+    </div>
+    <div class="card">
+      <div class="card-label" id="right-label">After</div>
+      <div class="viz-box" id="viz-right"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ DRAW ════════════════ -->
+<section class="section" id="sec-draw">
+  <div class="section-header">
+    <h2>Draw your own digit</h2>
+    <p>Sketch a digit (0–9) on the canvas. The CNN will classify it in real time as you draw.</p>
+  </div>
+  <div class="draw-grid">
+    <div>
+      <div class="draw-controls">
+        <button class="ctrl-btn primary" onclick="clearCanvas()">Clear</button>
+        <button class="ctrl-btn" onclick="classifyDrawn()">Classify now</button>
+        <label style="font-size:13px;color:var(--text3);display:flex;align-items:center;gap:6px">
+          Brush size
+          <input type="range" min="8" max="28" value="16" id="brush-size" style="width:80px" oninput="brushSize=+this.value">
+        </label>
+      </div>
+      <canvas id="draw-canvas" width="280" height="280"></canvas>
+      <p style="font-size:12px;color:var(--text3);margin-top:8px">Draw a single large digit centred on the canvas</p>
+    </div>
+    <div class="drawn-output">
+      <div class="draw-result-title">CNN prediction</div>
+      <div class="big-pred" id="draw-pred">?</div>
+      <div class="pred-label" id="draw-conf">Draw something to classify</div>
+      <div class="confidence-bars" id="draw-bars"></div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="card-label" style="margin-bottom:10px">Feature maps (conv layer 1)</div>
+        <div id="draw-fmaps" class="fm-wrap"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ KERNELS ════════════════ -->
+<section class="section" id="sec-kernels">
+  <div class="section-header">
+    <h2>Kernel visualizer</h2>
+    <p>See exactly what each filter detects. Select a kernel and watch it slide across the image.</p>
+  </div>
+
+  <div class="kernel-grid" id="kernel-grid"></div>
+
+  <div class="card-label" style="margin-bottom:10px">Live convolution demo — selected kernel on current image</div>
+  <div class="kernel-demo" id="kernel-demo">
+    <div>
+      <div class="kd-label">Input patch</div>
+      <div id="kd-input"></div>
+    </div>
+    <div class="kd-op">⊛</div>
+    <div>
+      <div class="kd-label">Kernel weights</div>
+      <div id="kd-kernel"></div>
+    </div>
+    <div class="kd-op">=</div>
+    <div>
+      <div class="kd-label">Feature map</div>
+      <div id="kd-output"></div>
+    </div>
+  </div>
+
+  <div class="card-label" style="margin-bottom:10px">Effect on each test image</div>
+  <div id="kernel-effects" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px"></div>
+</section>
+
+<!-- ════════════════ TRAINING ════════════════ -->
+<section class="section" id="sec-training">
+  <div class="section-header">
+    <h2>Training loop</h2>
+    <p>Watch loss decrease and accuracy climb as the network trains epoch by epoch.</p>
+  </div>
+
+  <div class="training-controls">
+    <button class="ctrl-btn primary" id="train-btn" onclick="toggleTraining()">▶ Start training</button>
+    <button class="ctrl-btn" onclick="resetTraining()">↺ Reset</button>
+    <label style="font-size:13px;color:var(--text3);display:flex;align-items:center;gap:6px">
+      Learning rate
+      <select id="lr-select" style="padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface);font-family:'DM Sans',sans-serif;font-size:13px">
+        <option value="0.001">0.001 (slow)</option>
+        <option value="0.01" selected>0.01 (normal)</option>
+        <option value="0.05">0.05 (fast)</option>
+        <option value="0.2">0.2 (unstable)</option>
+      </select>
+    </label>
+    <label style="font-size:13px;color:var(--text3);display:flex;align-items:center;gap:6px">
+      Speed
+      <input type="range" min="50" max="500" value="200" id="speed-slider" style="width:80px" oninput="trainDelay=600-+this.value">
+    </label>
+  </div>
+
+  <div class="training-stats">
+    <div class="train-card"><div class="train-val" id="t-epoch" style="color:var(--accent)">0</div><div class="train-lbl">epoch</div></div>
+    <div class="train-card"><div class="train-val" id="t-loss" style="color:var(--coral)">—</div><div class="train-lbl">loss</div></div>
+    <div class="train-card"><div class="train-val" id="t-acc" style="color:var(--teal)">—</div><div class="train-lbl">accuracy</div></div>
+    <div class="train-card"><div class="train-val" id="t-lr" style="color:var(--amber)">0.01</div><div class="train-lbl">learning rate</div></div>
+  </div>
+
+  <div class="chart-wrap">
+    <div class="card-label" style="margin-bottom:10px">Loss & accuracy curve</div>
+    <canvas id="loss-canvas" height="220"></canvas>
+  </div>
+
+  <div class="card-label" style="margin-bottom:8px">Epoch log</div>
+  <div class="epoch-log" id="epoch-log"><div style="color:var(--text3)">Press Start training to begin...</div></div>
+</section>
+
+<script>
+// ══════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════
+const IMGS = {
+  digit7:[0,0,1,1,1,1,0,0, 0,0,0,0,0,1,1,0, 0,0,0,0,1,1,0,0, 0,0,0,1,1,0,0,0, 0,0,1,1,0,0,0,0, 0,1,1,0,0,0,0,0, 1,1,1,1,1,1,1,0, 0,0,0,0,0,0,0,0],
+  digit0:[0,1,1,1,1,1,1,0, 1,1,0,0,0,0,1,1, 1,1,0,0,0,0,1,1, 1,1,0,0,0,0,1,1, 1,1,0,0,0,0,1,1, 1,1,0,0,0,0,1,1, 0,1,1,1,1,1,1,0, 0,0,0,0,0,0,0,0],
+  edge:  [0,0,0,0,1,1,1,1, 0,0,0,0,1,1,1,1, 0,0,0,1,1,1,1,0, 0,0,1,1,1,0,0,0, 0,1,1,1,0,0,0,0, 1,1,1,0,0,0,0,0, 1,1,0,0,0,0,0,0, 1,0,0,0,0,0,0,0],
+  cross: [0,0,0,1,1,0,0,0, 0,0,0,1,1,0,0,0, 0,0,0,1,1,0,0,0, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 0,0,0,1,1,0,0,0, 0,0,0,1,1,0,0,0, 0,0,0,1,1,0,0,0],
+  circle:[0,0,1,1,1,1,0,0, 0,1,1,0,0,1,1,0, 1,1,0,0,0,0,1,1, 1,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,1, 1,1,0,0,0,0,1,1, 0,1,1,0,0,1,1,0, 0,0,1,1,1,1,0,0],
+};
+
+const KERNELS_DEF = [
+  {name:'Horizontal edge',desc:'Detects top-bottom brightness changes',k:[[-1,-1,-1],[0,0,0],[1,1,1]],color:'#534AB7'},
+  {name:'Vertical edge',desc:'Detects left-right brightness changes',k:[[-1,0,1],[-1,0,1],[-1,0,1]],color:'#0F6E56'},
+  {name:'Diagonal edge',desc:'Detects diagonal patterns',k:[[-1,-1,0],[-1,0,1],[0,1,1]],color:'#854F0B'},
+  {name:'Sharpen',desc:'Enhances edges and fine details',k:[[0,-1,0],[-1,5,-1],[0,-1,0]],color:'#993C1D'},
+  {name:'Blur',desc:'Smooths and averages pixel values',k:[[1,1,1],[1,1,1],[1,1,1]],color:'#185FA5',scale:1/9},
+  {name:'Emboss',desc:'Creates a 3D raised effect',k:[[-2,-1,0],[-1,1,1],[0,1,2]],color:'#444441'},
+];
+
+let currentImg = 'digit7';
+let currentLayer = 0;
+let selectedKernel = 0;
+
+// ══════════════════════════════════════════════════
+// MATH HELPERS
+// ══════════════════════════════════════════════════
+function conv2d(img, kernel, scale=1) {
+  const out=[];
+  for(let i=0;i<6;i++) for(let j=0;j<6;j++){
+    let s=0;
+    for(let ki=0;ki<3;ki++) for(let kj=0;kj<3;kj++)
+      s+=(img[(i+ki)*8+(j+kj)]||0)*kernel[ki][kj]*scale;
+    out.push(s);
+  }
+  return out;
+}
+function relu(a){return a.map(v=>Math.max(0,v))}
+function maxpool(a,w){
+  const out=[],h=w/2;
+  for(let i=0;i<h;i++) for(let j=0;j<h;j++)
+    out.push(Math.max(a[i*2*w+j*2],a[i*2*w+j*2+1],a[(i*2+1)*w+j*2],a[(i*2+1)*w+j*2+1]||0));
+  return out;
+}
+function norm(a){const mn=Math.min(...a),mx=Math.max(...a),r=mx-mn||1;return a.map(v=>(v-mn)/r)}
+function softmax(a){const mx=Math.max(...a),e=a.map(v=>Math.exp(v-mx)),s=e.reduce((x,y)=>x+y,0);return e.map(v=>v/s)}
+
+function getFeatures(imgKey){
+  const img=IMGS[imgKey]||IMGS.digit7;
+  const maps=KERNELS_DEF.map(kd=>conv2d(img,kd.k,kd.scale||1));
+  const mapsR=maps.map(m=>relu(m));
+  const mapsP=mapsR.map(m=>maxpool(m,6));
+  const flat=mapsP.map(m=>m.reduce((s,v)=>s+v,0)/m.length);
+  const fc=Array.from({length:16},(_,i)=>Math.max(0,flat.reduce((s,v,j)=>s+v*Math.sin(i*j+1.3),0)/6));
+  const logits=Array.from({length:10},(_,i)=>fc.reduce((s,v,j)=>s+v*Math.cos(i*j+0.7),0));
+  return {img,maps,mapsR,mapsP,flat,fc,probs:softmax(logits)};
+}
+
+// ══════════════════════════════════════════════════
+// VIZ HELPERS
+// ══════════════════════════════════════════════════
+function hsv(t,ramp){
+  const v=Math.max(0,Math.min(1,t));
+  if(ramp==='purple') return `rgb(${Math.round(238-89*v)},${Math.round(237-106*v)},${Math.round(254-101*v)})`;
+  if(ramp==='teal')   return `rgb(${Math.round(225-196*v)},${Math.round(245-137*v)},${Math.round(238-193*v)})`;
+  if(ramp==='amber')  return `rgb(${Math.round(250-96*v)},${Math.round(238-113*v)},${Math.round(218-197*v)})`;
+  if(ramp==='coral')  return `rgb(${Math.round(250-57*v)},${Math.round(236-112*v)},${Math.round(231-218*v)})`;
+  if(ramp==='blue')   return `rgb(${Math.round(230-188*v)},${Math.round(241-177*v)},${Math.round(251-198*v)})`;
+  if(ramp==='green')  return `rgb(${Math.round(234-147*v)},${Math.round(243-116*v)},${Math.round(222-200*v)})`;
+  return `rgb(${Math.round(255*(1-v))},${Math.round(255*(1-v))},${Math.round(255*(1-v))})`;
+}
+
+function pixGrid(data,size,ramp,cs=20){
+  const g=document.createElement('div');
+  g.className='pixel-grid';
+  g.style.gridTemplateColumns=`repeat(${size},${cs}px)`;
+  norm(data).forEach(v=>{const px=document.createElement('div');px.className='px-cell';px.style.width=px.style.height=cs+'px';px.style.background=hsv(v,ramp);g.appendChild(px)});
+  return g;
+}
+
+function fmaps(maps,mapW,ramp,cs=14){
+  const w=document.createElement('div');w.className='fm-wrap';
+  maps.forEach(m=>{
+    const ch=document.createElement('div');
+    ch.className='fm';ch.style.gridTemplateColumns=`repeat(${mapW},${cs}px)`;
+    norm(m).forEach(v=>{const px=document.createElement('div');px.className='fm-cell';px.style.width=px.style.height=cs+'px';px.style.background=hsv(v,ramp);ch.appendChild(px)});
+    w.appendChild(ch);
+  });
+  return w;
+}
+
+function outBars(probs){
+  const maxP=Math.max(...probs);
+  const w=document.createElement('div');w.className='out-bars';
+  const top=document.createElement('div');top.className='top-pred';
+  top.innerHTML=`<strong>${probs.indexOf(maxP)}</strong>Predicted digit`;
+  w.appendChild(top);
+  probs.forEach((p,i)=>{
+    const row=document.createElement('div');row.className='out-row';
+    const pct=Math.round(p*100);
+    row.innerHTML=`<span class="out-lbl">${i}</span><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${p===maxP?'#1D9E75':'#AFA9EC'}"></div></div><span class="bar-pct">${pct}%</span>`;
+    w.appendChild(row);
+  });
+  return w;
+}
+
+// ══════════════════════════════════════════════════
+// EXPLORE
+// ══════════════════════════════════════════════════
+const LAYER_INFO=[
+  {name:'Input layer',desc:'Raw 8×8 grayscale image. Each cell is a pixel value (0=black, 1=white). Real images are usually 224×224 with 3 RGB channels. Always normalise inputs to [0,1] before feeding into any CNN.',math:'Shape: (8, 8, 1)  —  64 values total',stats:[{v:'8×8',l:'size'},{v:'1',l:'channels'},{v:'64',l:'values'},{v:'0',l:'params'}],leftLabel:'Raw input',rightLabel:'Pixel values'},
+  {name:'Conv2D — feature extraction',desc:'A 3×3 kernel slides across every position. At each step it multiplies its weights against the patch of pixels underneath and sums them up. This produces a "feature map" — a heatmap of where that pattern appears. We use 6 different kernels, each detecting a different pattern.',math:'output[i,j] = Σ(k,l) input[i+k, j+l] × weight[k,l] + bias',stats:[{v:'3×3',l:'kernel'},{v:'6',l:'filters'},{v:'6×6',l:'output'},{v:'60',l:'params'}],leftLabel:'Input image',rightLabel:'6 feature maps'},
+  {name:'ReLU activation',desc:'Every negative value is replaced with 0. This adds non-linearity — without it, the whole network would just be one big linear transform, no matter how many layers deep. ReLU also helps gradients flow backward during training.',math:'f(x) = max(0, x)',stats:[{v:'max(0,x)',l:'formula'},{v:'0',l:'params'},{v:'fast',l:'compute'},{v:'same',l:'shape'}],leftLabel:'Pre-activation',rightLabel:'Negatives zeroed (teal)'},
+  {name:'MaxPool2D — downsampling',desc:'Every 2×2 block is replaced by its single maximum value. The feature maps shrink from 6×6 to 3×3. This gives translational invariance — a pattern shifted by 1–2 pixels still activates the same neuron after pooling.',math:'output[i,j] = max(block[2i:2i+2, 2j:2j+2])',stats:[{v:'2×2',l:'pool'},{v:'3×3',l:'output'},{v:'4×',l:'reduction'},{v:'0',l:'params'}],leftLabel:'Post-ReLU maps',rightLabel:'Downsampled (3×3)'},
+  {name:'Conv2D #2 — deeper features',desc:'A second conv layer stacks on top of the first. Instead of detecting raw edges, it now learns to detect combinations of edges — corners, curves, textures. Each filter sees all 6 channels from the previous layer simultaneously.',math:'Shape: (3,3,6) → (1,1,6) via 6 filters of size 3×3×6',stats:[{v:'3×3',l:'kernel'},{v:'6',l:'filters'},{v:'1×1',l:'output'},{v:'330',l:'params'}],leftLabel:'Pooled maps',rightLabel:'Abstract features'},
+  {name:'Flatten — bridge to classifier',desc:'The 3D tensor is reshaped into a 1D vector. No math, no learning — just a reshape. This is the handoff point: spatial reasoning (conv layers) hands off to pattern classification (fully connected layers).',math:'(1, 1, 6)  →  [f0, f1, f2, f3, f4, f5]',stats:[{v:'6',l:'values'},{v:'1D',l:'shape'},{v:'0',l:'params'},{v:'reshape',l:'operation'}],leftLabel:'3D feature tensor',rightLabel:'Flat 1D vector'},
+  {name:'Dense (fully connected)',desc:'Every input connects to every output neuron. With 6 inputs and 16 outputs there are 6×16=96 weights plus 16 biases. The network learns which feature combinations correspond to which classes.',math:'output = ReLU(W · x + b)     W:(6,16)  b:(16,)',stats:[{v:'6→16',l:'shape'},{v:'ReLU',l:'activation'},{v:'112',l:'params'},{v:'16',l:'outputs'}],leftLabel:'Flat features (input)',rightLabel:'16 hidden neurons'},
+  {name:'Softmax output',desc:'Final layer maps 16 hidden values to 10 class probabilities. Softmax squashes all values to [0,1] and ensures they sum to exactly 1. The class with the highest probability is the prediction.',math:'P(i) = exp(zᵢ) / Σⱼ exp(zⱼ)',stats:[{v:'10',l:'classes'},{v:'softmax',l:'activation'},{v:'170',l:'params'},{v:'argmax',l:'prediction'}],leftLabel:'Hidden neurons',rightLabel:'Class probabilities'},
+];
+
+function setImg(key,btn){
+  currentImg=key;
+  document.querySelectorAll('.img-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderExplore();
+  renderKernelEffects();
+}
+
+function selLayer(i){
+  currentLayer=i;
+  document.querySelectorAll('.lp').forEach((p,idx)=>p.classList.toggle('active',idx===i));
+  renderExplore();
+}
+
+function renderExplore(){
+  const d=getFeatures(currentImg);
+  const info=LAYER_INFO[currentLayer];
+  const L=document.getElementById('viz-left');
+  const R=document.getElementById('viz-right');
+  L.innerHTML='';R.innerHTML='';
+  document.getElementById('left-label').textContent=info.leftLabel;
+  document.getElementById('right-label').textContent=info.rightLabel;
+  document.getElementById('info-card').innerHTML=`
+    <h3>${info.name}</h3>
+    <div class="desc">${info.desc}</div>
+    <div class="math-block">${info.math}</div>
+    <div class="stats-row">${info.stats.map(s=>`<div class="stat"><div class="stat-val">${s.v}</div><div class="stat-lbl">${s.l}</div></div>`).join('')}</div>`;
+  if(currentLayer===0){L.appendChild(pixGrid(d.img,8,'gray',22));R.appendChild(pixGrid(d.img,8,'purple',22));}
+  else if(currentLayer===1){L.appendChild(pixGrid(d.img,8,'gray',18));R.appendChild(fmaps(d.maps,6,'purple',16));}
+  else if(currentLayer===2){L.appendChild(fmaps(d.maps,6,'purple',16));R.appendChild(fmaps(d.mapsR,6,'teal',16));}
+  else if(currentLayer===3){L.appendChild(fmaps(d.mapsR,6,'teal',16));R.appendChild(fmaps(d.mapsP,3,'amber',24));}
+  else if(currentLayer===4){
+    L.appendChild(fmaps(d.mapsP,3,'amber',24));
+    const g=document.createElement('div');g.style.cssText='display:flex;gap:8px;flex-wrap:wrap;justify-content:center';
+    norm(d.flat).forEach((v,i)=>{const b=document.createElement('div');b.style.cssText=`width:34px;height:34px;border-radius:8px;background:${hsv(v,'coral')};display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text2)`;b.textContent=`f${i}`;g.appendChild(b)});
+    R.appendChild(g);
+  } else if(currentLayer===5){
+    L.appendChild(fmaps(d.mapsP,3,'amber',24));
+    const wrap=document.createElement('div');wrap.style.cssText='display:flex;flex-direction:column;gap:8px;align-items:center;width:100%';
+    const row=document.createElement('div');row.style.cssText='display:flex;gap:6px';
+    norm(d.flat).forEach((v,i)=>{const c=document.createElement('div');c.style.cssText=`width:36px;height:52px;border-radius:6px;background:${hsv(v,'coral')};display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px`;c.innerHTML=`<span style="font-size:9px;color:var(--text2)">f${i}</span>`;row.appendChild(c)});
+    wrap.appendChild(row);R.appendChild(wrap);
+  } else if(currentLayer===6){
+    const inW=document.createElement('div');inW.style.cssText='display:flex;flex-direction:column;gap:5px;align-items:center';
+    inW.innerHTML='<div style="font-size:11px;color:var(--text3);margin-bottom:4px">6 inputs</div>';
+    norm(d.flat).forEach(v=>{const n=document.createElement('div');n.style.cssText=`width:22px;height:22px;border-radius:50%;background:${hsv(v,'coral')}`;inW.appendChild(n)});
+    L.appendChild(inW);
+    const outW=document.createElement('div');outW.style.cssText='display:flex;flex-direction:column;gap:4px;align-items:center';
+    outW.innerHTML='<div style="font-size:11px;color:var(--text3);margin-bottom:4px">16 neurons</div>';
+    norm(d.fc).forEach(v=>{const n=document.createElement('div');n.style.cssText=`width:18px;height:18px;border-radius:50%;background:${hsv(v,'purple')}`;outW.appendChild(n)});
+    R.appendChild(outW);
+  } else if(currentLayer===7){
+    const inW=document.createElement('div');inW.style.cssText='display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center';
+    norm(d.fc).slice(0,10).forEach(v=>{const n=document.createElement('div');n.style.cssText=`width:14px;height:14px;border-radius:50%;background:${hsv(v,'purple')}`;inW.appendChild(n)});
+    L.appendChild(inW);
+    R.appendChild(outBars(d.probs));
+  }
+}
+renderExplore();
+
+// ══════════════════════════════════════════════════
+// DRAW
+// ══════════════════════════════════════════════════
+const canvas=document.getElementById('draw-canvas');
+const ctx=canvas.getContext('2d');
+let drawing=false;
+let brushSize=16;
+ctx.fillStyle='#fff';ctx.fillRect(0,0,280,280);
+ctx.strokeStyle='#111';ctx.lineCap='round';ctx.lineJoin='round';
+
+function getPos(e){
+  const r=canvas.getBoundingClientRect();
+  if(e.touches) return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top};
+  return{x:e.clientX-r.left,y:e.clientY-r.top};
+}
+canvas.addEventListener('mousedown',e=>{drawing=true;const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y)});
+canvas.addEventListener('mousemove',e=>{if(!drawing)return;const p=getPos(e);ctx.lineWidth=brushSize;ctx.strokeStyle='#111';ctx.lineTo(p.x,p.y);ctx.stroke();classifyDrawn()});
+canvas.addEventListener('mouseup',()=>drawing=false);
+canvas.addEventListener('mouseleave',()=>drawing=false);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();drawing=true;const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y)},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!drawing)return;const p=getPos(e);ctx.lineWidth=brushSize;ctx.strokeStyle='#111';ctx.lineTo(p.x,p.y);ctx.stroke();classifyDrawn()},{passive:false});
+canvas.addEventListener('touchend',()=>drawing=false);
+
+function clearCanvas(){ctx.fillStyle='#fff';ctx.fillRect(0,0,280,280);document.getElementById('draw-pred').textContent='?';document.getElementById('draw-conf').textContent='Draw something to classify';document.getElementById('draw-bars').innerHTML='';document.getElementById('draw-fmaps').innerHTML=''}
+
+function canvasTo8x8(){
+  const tmp=document.createElement('canvas');tmp.width=8;tmp.height=8;
+  const tc=tmp.getContext('2d');tc.drawImage(canvas,0,0,8,8);
+  const id=tc.getImageData(0,0,8,8).data;
+  const pix=[];
+  for(let i=0;i<64;i++) pix.push(1-(id[i*4]/255));
+  return pix;
+}
+
+function classifyDrawn(){
+  const pix=canvasTo8x8();
+  const maps=KERNELS_DEF.map(kd=>conv2d(pix,kd.k,kd.scale||1));
+  const mapsR=maps.map(m=>relu(m));
+  const mapsP=mapsR.map(m=>maxpool(m,6));
+  const flat=mapsP.map(m=>m.reduce((s,v)=>s+v,0)/m.length);
+  const fc=Array.from({length:16},(_,i)=>Math.max(0,flat.reduce((s,v,j)=>s+v*Math.sin(i*j+1.3),0)/6));
+  const logits=Array.from({length:10},(_,i)=>fc.reduce((s,v,j)=>s+v*Math.cos(i*j+0.7),0));
+  const probs=softmax(logits);
+  const best=probs.indexOf(Math.max(...probs));
+  const conf=Math.round(probs[best]*100);
+
+  document.getElementById('draw-pred').textContent=best;
+  document.getElementById('draw-conf').textContent=`${conf}% confidence`;
+
+  const bars=document.getElementById('draw-bars');
+  bars.innerHTML='';
+  probs.forEach((p,i)=>{
+    const row=document.createElement('div');row.className='out-row';
+    const pct=Math.round(p*100);
+    row.innerHTML=`<span class="out-lbl">${i}</span><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${i===best?'#1D9E75':'#AFA9EC'}"></div></div><span class="bar-pct">${pct}%</span>`;
+    bars.appendChild(row);
+  });
+
+  const fm=document.getElementById('draw-fmaps');
+  fm.innerHTML='';
+  fm.appendChild(fmaps(mapsR,6,'teal',12));
+}
+
+// ══════════════════════════════════════════════════
+// KERNELS
+// ══════════════════════════════════════════════════
+function renderKernelGrid(){
+  const grid=document.getElementById('kernel-grid');
+  grid.innerHTML='';
+  KERNELS_DEF.forEach((kd,i)=>{
+    const card=document.createElement('div');
+    card.className='kernel-card'+(i===selectedKernel?' selected':'');
+    card.onclick=()=>{selectedKernel=i;renderKernelGrid();renderKernelDemo();renderKernelEffects()};
+    const flat=kd.k.flat();
+    const mn=Math.min(...flat),mx=Math.max(...flat),rng=mx-mn||1;
+    card.innerHTML=`<h4>${kd.name}</h4><p>${kd.desc}</p><div class="k3">${flat.map(v=>{const t=(v-mn)/rng;const bg=`rgb(${Math.round(240-200*t)},${Math.round(240-70*t)},${Math.round(240-20*t)})`;const col=t>0.5?'#1a1917':'#888780';return`<div class="k-cell" style="background:${bg};color:${col}">${v}</div>`}).join('')}</div>`;
+    grid.appendChild(card);
+  });
+}
+
+function renderKernelDemo(){
+  const kd=KERNELS_DEF[selectedKernel];
+  const img=IMGS[currentImg];
+  const patch=[];
+  for(let i=0;i<3;i++) for(let j=0;j<3;j++) patch.push(img[(2+i)*8+(2+j)]||0);
+  document.getElementById('kd-input').innerHTML='';
+  document.getElementById('kd-input').appendChild(pixGrid(patch,3,'gray',28));
+
+  const kflat=kd.k.flat(),mn=Math.min(...kflat),mx=Math.max(...kflat),rng=mx-mn||1;
+  const kgrid=document.createElement('div');kgrid.className='k3';kgrid.style.gap='3px';
+  kflat.forEach(v=>{const t=(v-mn)/rng;const bg=`rgb(${Math.round(240-200*t)},${Math.round(240-70*t)},${Math.round(240-20*t)})`;const c=document.createElement('div');c.className='k-cell';c.style.cssText=`background:${bg};color:${t>0.5?'#1a1917':'#888780'}`;c.textContent=v;kgrid.appendChild(c)});
+  document.getElementById('kd-kernel').innerHTML='';document.getElementById('kd-kernel').appendChild(kgrid);
+
+  const fm=conv2d(img,kd.k,kd.scale||1);
+  document.getElementById('kd-output').innerHTML='';
+  document.getElementById('kd-output').appendChild(pixGrid(relu(fm),6,'purple',18));
+}
+
+function renderKernelEffects(){
+  const kd=KERNELS_DEF[selectedKernel];
+  const wrap=document.getElementById('kernel-effects');
+  wrap.innerHTML='';
+  Object.entries(IMGS).forEach(([key,img])=>{
+    const card=document.createElement('div');
+    card.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center';
+    const label=document.createElement('div');
+    label.style.cssText='font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:500';
+    label.textContent=key;
+    const fm=relu(conv2d(img,kd.k,kd.scale||1));
+    card.appendChild(label);
+    card.appendChild(pixGrid(fm,6,'purple',16));
+    wrap.appendChild(card);
+  });
+}
+
+renderKernelGrid();renderKernelDemo();renderKernelEffects();
+
+// ══════════════════════════════════════════════════
+// TRAINING
+// ══════════════════════════════════════════════════
+let trainInterval=null;
+let trainRunning=false;
+let trainDelay=400;
+let trainEpoch=0;
+let lossHistory=[];
+let accHistory=[];
+let W1=Array.from({length:16},()=>Array.from({length:6},()=>(Math.random()-.5)*0.5));
+let b1=Array.from({length:16},()=>0);
+let W2=Array.from({length:10},()=>Array.from({length:16},()=>(Math.random()-.5)*0.3));
+let b2=Array.from({length:10},()=>0);
+
+function sigmoid(x){return 1/(1+Math.exp(-x))}
+function trainStep(){
+  const lr=+document.getElementById('lr-select').value;
+  const samples=Object.values(IMGS);
+  const labels=[7,0,0,1,0];
+  let totalLoss=0,correct=0;
+  samples.forEach((img,si)=>{
+    const d=getFeatures(Object.keys(IMGS)[si]);
+    const x=d.flat;
+    const h=W1.map((row,i)=>Math.max(0,row.reduce((s,w,j)=>s+w*x[j],0)+b1[i]));
+    const logits=W2.map((row,i)=>row.reduce((s,w,j)=>s+w*h[j],0)+b2[i]);
+    const probs=softmax(logits);
+    const label=labels[si];
+    totalLoss+=-Math.log(probs[label]+1e-7);
+    if(probs.indexOf(Math.max(...probs))===label) correct++;
+    const dlogits=probs.map((p,i)=>p-(i===label?1:0));
+    W2.forEach((row,i)=>{row.forEach((_,j)=>{W2[i][j]-=lr*dlogits[i]*h[j]});b2[i]-=lr*dlogits[i]});
+    const dh=W2[0].map((_,j)=>dlogits.reduce((s,d,i)=>s+d*W2[i][j],0));
+    W1.forEach((row,i)=>{if(h[i]>0){row.forEach((_,j)=>{W1[i][j]-=lr*dh[i]*x[j]});b1[i]-=lr*dh[i]}});
+  });
+  trainEpoch++;
+  const loss=totalLoss/samples.length;
+  const acc=correct/samples.length;
+  lossHistory.push(loss);accHistory.push(acc);
+  document.getElementById('t-epoch').textContent=trainEpoch;
+  document.getElementById('t-loss').textContent=loss.toFixed(4);
+  document.getElementById('t-acc').textContent=Math.round(acc*100)+'%';
+  document.getElementById('t-lr').textContent=lr;
+  const log=document.getElementById('epoch-log');
+  const line=document.createElement('div');line.className='log-line';
+  line.innerHTML=`<span class="log-epoch">epoch ${String(trainEpoch).padStart(3,' ')}</span><span class="log-loss">loss ${loss.toFixed(4)}</span><span class="log-acc">acc ${Math.round(acc*100)}%</span>`;
+  log.appendChild(line);log.scrollTop=log.scrollHeight;
+  drawChart();
+  if(trainEpoch>=100){stopTraining();document.getElementById('epoch-log').innerHTML+=`<div style="color:var(--green);font-weight:600">Training complete!</div>`}
+}
+
+function drawChart(){
+  const canvas=document.getElementById('loss-canvas');
+  const W=canvas.clientWidth||800,H=220;
+  canvas.width=W;canvas.height=H;
+  const cx=canvas.getContext('2d');
+  cx.clearRect(0,0,W,H);
+  const pad={t:16,r:16,b:36,l:48};
+  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+  cx.strokeStyle='#e2dfd6';cx.lineWidth=1;
+  [0,.25,.5,.75,1].forEach(v=>{const y=pad.t+ch*(1-v);cx.beginPath();cx.moveTo(pad.l,y);cx.lineTo(pad.l+cw,y);cx.stroke();cx.fillStyle='#888780';cx.font='11px JetBrains Mono,monospace';cx.textAlign='right';cx.fillText(v.toFixed(2),pad.l-6,y+4)});
+  if(lossHistory.length<2) return;
+  const n=lossHistory.length;
+  const maxL=Math.max(...lossHistory,0.01);
+  function plotLine(data,color,maxVal){
+    cx.beginPath();cx.strokeStyle=color;cx.lineWidth=2;
+    data.forEach((v,i)=>{
+      const x=pad.l+(i/(n-1))*cw,y=pad.t+ch*(1-Math.min(v/maxVal,1));
+      i===0?cx.moveTo(x,y):cx.lineTo(x,y);
+    });cx.stroke();
+  }
+  plotLine(lossHistory,'#D85A30',maxL);
+  plotLine(accHistory,'#1D9E75',1);
+  cx.fillStyle='#D85A30';cx.font='12px DM Sans,sans-serif';cx.textAlign='left';cx.fillText('— loss',pad.l+8,pad.t+16);
+  cx.fillStyle='#1D9E75';cx.fillText('— accuracy',pad.l+60,pad.t+16);
+  cx.fillStyle='#888780';cx.font='11px JetBrains Mono,monospace';cx.textAlign='center';
+  [0,25,50,75,100].forEach(v=>{if(v<n){const x=pad.l+(v/(Math.max(n,100)-1))*cw;cx.fillText(v,x,H-8)}});
+}
+
+function toggleTraining(){
+  if(trainRunning) stopTraining();
+  else startTraining();
+}
+function startTraining(){
+  trainRunning=true;
+  document.getElementById('train-btn').textContent='⏸ Pause';
+  trainInterval=setInterval(trainStep,trainDelay);
+}
+function stopTraining(){
+  trainRunning=false;
+  document.getElementById('train-btn').textContent='▶ Resume';
+  clearInterval(trainInterval);
+}
+function resetTraining(){
+  stopTraining();
+  trainEpoch=0;lossHistory=[];accHistory=[];
+  W1=Array.from({length:16},()=>Array.from({length:6},()=>(Math.random()-.5)*0.5));
+  b1=Array.from({length:16},()=>0);
+  W2=Array.from({length:10},()=>Array.from({length:16},()=>(Math.random()-.5)*0.3));
+  b2=Array.from({length:10},()=>0);
+  document.getElementById('t-epoch').textContent='0';
+  document.getElementById('t-loss').textContent='—';
+  document.getElementById('t-acc').textContent='—';
+  document.getElementById('epoch-log').innerHTML='<div style="color:var(--text3)">Press Start training to begin...</div>';
+  document.getElementById('train-btn').textContent='▶ Start training';
+  const c=document.getElementById('loss-canvas');const cx=c.getContext('2d');cx.clearRect(0,0,c.width,c.height);
+}
+
+// ══════════════════════════════════════════════════
+// NAV
+// ══════════════════════════════════════════════════
+function showSection(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='kernels'){renderKernelDemo();renderKernelEffects()}
+}
+
+window.addEventListener('scroll',()=>{
+  const s=document.documentElement;
+  document.getElementById('progress').style.width=(s.scrollTop/(s.scrollHeight-s.clientHeight)*100)+'%';
+});
+</script>
+</body>
+</html>
